@@ -1,5 +1,7 @@
 # beamjq
 
+![Image of Cloud Dataflow](docs/dataflow.png)
+
 See [simple example](example/simple)
 
 ## refs
