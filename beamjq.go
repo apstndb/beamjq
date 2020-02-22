@@ -2,31 +2,51 @@ package beamjq
 
 import (
 	"encoding/json"
-	"github.com/itchyny/gojq"
 	"log"
 	"reflect"
+
+	"github.com/itchyny/gojq"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
 )
 
 func init() {
-	beam.RegisterType(reflect.TypeOf((*jqFilter)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*jqFilterFn)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*jqFilterStringFn)(nil)).Elem())
 }
 
-type jqFilter struct {
+type jqFilterFn struct {
 	filter string      `json:"filter"`
-	query  *gojq.Query `json:"query"`
+	query  *gojq.Query
 }
 
-func JqFilter(filter string) *jqFilter {
-	query, err := gojq.Parse(filter)
+func JqFilter(s beam.Scope, filter string, input beam.PCollection) beam.PCollection {
+	s = s.Scope("JqFilter: " + filter)
+	return beam.ParDo(s, JqFilterFn(filter), input)
+}
+
+func JqFilterString(s beam.Scope, filter string, input beam.PCollection) beam.PCollection {
+	s = s.Scope("JqFilterString: " + filter)
+	return beam.ParDo(s, JqFilterStringFn(filter), input)
+}
+
+func JqFilterFn(filter string) *jqFilterFn {
+	return &jqFilterFn{filter: filter}
+}
+
+func (f *jqFilterFn) Setup() {
+	query, err := gojq.Parse(f.filter)
 	if err != nil {
 		panic(err)
 	}
-	return &jqFilter{filter: filter, query: query}
+	f.query = query
 }
 
-func (f *jqFilter) ProcessElement(row []byte, emit func([]byte)) error {
+func (f *jqFilterStringFn) Setup() {
+	f.jqFilterFn.Setup()
+}
+
+func (f *jqFilterFn) ProcessElement(row []byte, emit func([]byte)) error {
 	var input interface{}
 	err := json.Unmarshal(row, &input)
 	if err != nil {
@@ -50,16 +70,16 @@ func (f *jqFilter) ProcessElement(row []byte, emit func([]byte)) error {
 	return nil
 }
 
-type jqFilterString struct {
-	*jqFilter
+type jqFilterStringFn struct {
+	*jqFilterFn
 }
 
-func JqFilterString(filter string) *jqFilterString {
-	return &jqFilterString{JqFilter(filter)}
+func JqFilterStringFn(filter string) *jqFilterStringFn {
+	return &jqFilterStringFn{JqFilterFn(filter)}
 }
 
-func (f jqFilterString) ProcessElement(row string, emit func(string)) error {
-	return f.jqFilter.ProcessElement([]byte(row), func(v []byte) {
+func (f jqFilterStringFn) ProcessElement(row string, emit func(string)) error {
+	return f.jqFilterFn.ProcessElement([]byte(row), func(v []byte) {
 		emit(string(v))
 	})
 }

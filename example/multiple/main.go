@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 
 	"github.com/apache/beam/sdks/go/pkg/beam"
@@ -16,14 +17,29 @@ var (
 
 	output = flag.String("output", "", "Output file (required).")
 
-	filter = flag.String("filter", "", "jq filter (required).")
+	filters Strings
 )
+
+type Strings []string
+
+func (s *Strings) String() string {
+	return fmt.Sprintf("%v", []string(*s))
+}
+
+func (s *Strings) Set(v string) error {
+	*s = append(*s, v)
+	return nil
+}
+
+func init () {
+flag.Var(&filters, "filter", "jq filter (required).")
+}
 
 func main() {
 	flag.Parse()
 	beam.Init()
 
-	if *filter == "" {
+	if len(filters) == 0 {
 		log.Fatal("No filter provided")
 	}
 
@@ -35,8 +51,11 @@ func main() {
 	s := p.Root()
 
 	lines := textio.Read(s, *input)
-	filtered := beam.ParDo(s, beamjq.JqFilterStringFn(*filter), lines)
-	textio.Write(s, *output, filtered)
+	pc := lines
+	for _, filter := range filters {
+		pc = beamjq.JqFilterString(s, filter, pc)
+	}
+	textio.Write(s, *output, pc)
 
 	if err := beamx.Run(context.Background(), p); err != nil {
 		log.Fatalf("Failed to execute job: %v", err)
