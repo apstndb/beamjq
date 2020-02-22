@@ -49,3 +49,17 @@ func (f *jqFilter) ProcessElement(row []byte, emit func([]byte)) error {
 	}
 	return nil
 }
+
+type jqFilterString struct {
+	*jqFilter
+}
+
+func JqFilterString(filter string) *jqFilterString {
+	return &jqFilterString{JqFilter(filter)}
+}
+
+func (f jqFilterString) ProcessElement(row string, emit func(string)) error {
+	return f.jqFilter.ProcessElement([]byte(row), func(v []byte) {
+		emit(string(v))
+	})
+}
