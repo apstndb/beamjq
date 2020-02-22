@@ -1,6 +1,6 @@
 # beamjq
 
-![Image of Cloud Dataflow](docs/dataflow.png)
+<img src="https://raw.githubusercontent.com/apstndb/beamjq/master/docs/dataflow.png" width="320">
 
 See [simple example](example/simple)
 
