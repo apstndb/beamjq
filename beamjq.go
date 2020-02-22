@@ -42,7 +42,6 @@ func (f *jqFilterBinaryFn) Setup() {
 	f.query = query
 }
 
-
 func (f *jqFilterBinaryFn) ProcessElement(row []byte, emit func([]byte)) error {
 	var input interface{}
 	err := json.Unmarshal(row, &input)
@@ -71,7 +70,6 @@ type jqFilterStringFn struct {
 	jqFilterBinaryFn
 }
 
-
 func JqFilterStringFn(filter string) *jqFilterStringFn {
 	return &jqFilterStringFn{jqFilterBinaryFn{Filter: filter}}
 }
@@ -85,4 +83,3 @@ func (f jqFilterStringFn) ProcessElement(row string, emit func(string)) error {
 func (f *jqFilterStringFn) Setup() {
 	f.jqFilterBinaryFn.Setup()
 }
-

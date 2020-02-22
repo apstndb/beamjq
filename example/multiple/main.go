@@ -31,8 +31,8 @@ func (s *Strings) Set(v string) error {
 	return nil
 }
 
-func init () {
-flag.Var(&filters, "filter", "jq filter (required).")
+func init() {
+	flag.Var(&filters, "filter", "jq filter (required).")
 }
 
 func main() {
@@ -61,4 +61,3 @@ func main() {
 		log.Fatalf("Failed to execute job: %v", err)
 	}
 }
-

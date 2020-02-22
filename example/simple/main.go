@@ -48,4 +48,3 @@ func main() {
 		log.Fatalf("Failed to execute job: %v", err)
 	}
 }
-
