@@ -38,7 +38,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	lines := beam.Create(s, input)
-	filtered := beam.ParDo(s, beamjq.JqFilterFn(*filter), lines)
+	filtered := beam.ParDo(s, beamjq.JqFilterBinaryFn(*filter), lines)
 	formatted := beam.ParDo(s, func(b []byte) string {
 		return string(b)
 	}, filtered)

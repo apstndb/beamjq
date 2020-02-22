@@ -11,18 +11,13 @@ import (
 )
 
 func init() {
-	beam.RegisterType(reflect.TypeOf((*jqFilterFn)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*jqFilterBinaryFn)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*jqFilterStringFn)(nil)).Elem())
 }
 
-type jqFilterFn struct {
-	Filter string `json:"Filter"`
-	query  *gojq.Query
-}
-
-func JqFilter(s beam.Scope, filter string, input beam.PCollection) beam.PCollection {
-	s = s.Scope("JqFilter: " + filter)
-	return beam.ParDo(s, JqFilterFn(filter), input)
+func JqFilterBinary(s beam.Scope, filter string, input beam.PCollection) beam.PCollection {
+	s = s.Scope("JqFilterBinary: " + filter)
+	return beam.ParDo(s, JqFilterBinaryFn(filter), input)
 }
 
 func JqFilterString(s beam.Scope, filter string, input beam.PCollection) beam.PCollection {
@@ -30,11 +25,16 @@ func JqFilterString(s beam.Scope, filter string, input beam.PCollection) beam.PC
 	return beam.ParDo(s, JqFilterStringFn(filter), input)
 }
 
-func JqFilterFn(filter string) *jqFilterFn {
-	return &jqFilterFn{Filter: filter}
+type jqFilterBinaryFn struct {
+	Filter string `json:"Filter"`
+	query  *gojq.Query
 }
 
-func (f *jqFilterFn) Setup() {
+func JqFilterBinaryFn(filter string) *jqFilterBinaryFn {
+	return &jqFilterBinaryFn{Filter: filter}
+}
+
+func (f *jqFilterBinaryFn) Setup() {
 	query, err := gojq.Parse(f.Filter)
 	if err != nil {
 		panic(err)
@@ -42,25 +42,14 @@ func (f *jqFilterFn) Setup() {
 	f.query = query
 }
 
-func (f *jqFilterStringFn) Setup() {
-	query, err := gojq.Parse(f.Filter)
-	if err != nil {
-		panic(err)
-	}
-	f.query = query
-}
 
-func (f *jqFilterFn) ProcessElement(row []byte, emit func([]byte)) error {
-	return ProcessElementImpl(f.query, row, emit)
-}
-
-func ProcessElementImpl(query *gojq.Query, row []byte, emit func([]byte)) error {
+func (f *jqFilterBinaryFn) ProcessElement(row []byte, emit func([]byte)) error {
 	var input interface{}
 	err := json.Unmarshal(row, &input)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	iter := query.Run(input) // or query.RunWithContext
+	iter := f.query.Run(input) // or query.RunWithContext
 	for {
 		v, ok := iter.Next()
 		if !ok {
@@ -79,17 +68,21 @@ func ProcessElementImpl(query *gojq.Query, row []byte, emit func([]byte)) error 
 }
 
 type jqFilterStringFn struct {
-	Filter string `json:"Filter"`
-	query  *gojq.Query
+	jqFilterBinaryFn
 }
 
 
 func JqFilterStringFn(filter string) *jqFilterStringFn {
-	return &jqFilterStringFn{Filter: filter}
+	return &jqFilterStringFn{jqFilterBinaryFn{Filter: filter}}
 }
 
 func (f jqFilterStringFn) ProcessElement(row string, emit func(string)) error {
-	return ProcessElementImpl(f.query, []byte(row), func(v []byte) {
+	return f.jqFilterBinaryFn.ProcessElement([]byte(row), func(v []byte) {
 		emit(string(v))
 	})
 }
+
+func (f *jqFilterStringFn) Setup() {
+	f.jqFilterBinaryFn.Setup()
+}
+
