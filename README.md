@@ -1,3 +1,3 @@
 ## beamjq
 
-See (simple example)[example/simple/main.go]
+See [simple example](example/simple/main.go)
