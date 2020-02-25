@@ -55,8 +55,23 @@ func TestJqFilterTyped(t *testing.T) {
 	passert.Equals(s, pcol, T{I: 1, S: "foo"}, T{I: 2, S: "bar"})
 	jsonb := beam.ParDo(s,
 		func(val T, emit func ([]byte)) error {b, err := json.Marshal(val); if err != nil {return err}; emit(b);return nil}, pcol)
-	filteredB := beamjq.JqFilterTyped(s, "select(.i == 1)", jsonb, reflect.TypeOf(T{}))
+	filteredB := beamjq.JqFilterOutputTyped(s, "select(.i == 1)", jsonb, reflect.TypeOf(T{}))
 	passert.Equals(s, filteredB, T{I: 1, S: "foo"})
+	if err := ptest.Run(pipeline); err != nil {
+		t.Fatalf("Failed to execute job: %v", err)
+	}
+}
+
+func TestJqFilterReadTyped(t *testing.T) {
+	type T struct {
+		I int `json:"i"`
+		S string `json:"s"`
+	}
+	pipeline, s := beam.NewPipelineWithRoot()
+	pcol := beam.Create(s, T{I: 1, S: "foo"}, T{I: 2, S: "bar"})
+	passert.Equals(s, pcol, T{I: 1, S: "foo"}, T{I: 2, S: "bar"})
+	_ = beamjq.JqFilterReadTyped(s, "select(.i == 1) | .s", pcol)
+	// passert.Equals(s, filteredB, []byte("foo"))
 	if err := ptest.Run(pipeline); err != nil {
 		t.Fatalf("Failed to execute job: %v", err)
 	}
