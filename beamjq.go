@@ -15,6 +15,7 @@ func init() {
 	beam.RegisterType(reflect.TypeOf((*jqFilterBinaryFn)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*jqFilterStringFn)(nil)).Elem())
 	beam.RegisterType(reflect.TypeOf((*jqFilterOutputTypedFn)(nil)).Elem())
+	beam.RegisterType(reflect.TypeOf((*jqFilterReadTypedFn)(nil)).Elem())
 }
 
 func JqFilterBinary(s beam.Scope, filter string, input beam.PCollection) beam.PCollection {
@@ -100,7 +101,6 @@ func jsonRoundTripToInterface(input interface{}) (interface{}, error) {
 
 
 func JqFilterReadTyped(s beam.Scope, filter string, input beam.PCollection) beam.PCollection {
-	// t := input.Type().Type()
 	s = s.Scope("JqFilterOutputTyped: " + filter)
 	pre := beam.AddFixedKey(s, input)
 	post := beam.GroupByKey(s, pre)
